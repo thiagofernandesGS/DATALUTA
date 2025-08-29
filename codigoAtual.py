@@ -21,25 +21,18 @@ ruler = nlp.add_pipe("entity_ruler", before="ner")
 padroes = [{"label": "LOC", "pattern": nome} for nome in nomes_cidades]
 ruler.add_patterns(padroes)
 
-# 5. Texto a ser analisado
-texto = (
-    "A Prefeitura de Campo Grande por meio da Secretaria Municipal de Assistência Social (SAS), "
-    "em parceria com a Fundação Nacional do Índio (Funai), está realizando a entrega emergencial de "
-    "230 cestas básicas para a população indígena de três comunidades localizadas no Jardim Noroeste. "
-    "A distribuição acontece nas comunidades Água Funda, Estrela do Amanhã e Nova Canaã."
-    "Cidade de Piripá"
-)
-doc = nlp(texto)
 
-# 6. Verifica as entidades e exibe resultados
-for ent in doc.ents:
-    if ent.label_ == "LOC":
-        cidade_info = cities.get(ent.text)
-        if cidade_info:
-            estado_id = str(cidade_info["state_id"])
-            estado_info = states.get(estado_id, {})
-            regiao_id = estado_id[0]
-            regiao_nome = regions.get(regiao_id, "Desconhecido")
-            print(f"{ent.text} → Região: {regiao_nome}, Estado: {estado_info.get('name', 'Desconhecido')}, Sigla do Estado: {estado_info.get('sigla', 'Desconhecido')}, Cidade ID: {cidade_info['id']}, Bioma Principal: {cidade_info.get('BiomaP', 'Desconhecido')}, Bioma Secundário: {cidade_info.get('BiomaS', 'Não contêm')}, Bioma Terciário: {cidade_info.get('BiomaT', 'Não contêm')}")
-        else:
-            print(f"{ent.text} → Informação não encontrada")
+def encontrar_locais(texto):
+    # 5. Verifica as entidades e exibe resultados
+    doc = nlp(texto)
+    for ent in doc.ents:
+        if ent.label_ == "LOC":
+            cidade_info = cities.get(ent.text)
+            if cidade_info:
+                estado_id = str(cidade_info["state_id"])
+                estado_info = states.get(estado_id, {})
+                regiao_id = estado_id[0]
+                regiao_nome = regions.get(regiao_id, "Desconhecido")
+                print(f"{ent.text} → Região: {regiao_nome}, Estado: {estado_info.get('name', 'Desconhecido')}, Sigla do Estado: {estado_info.get('sigla', 'Desconhecido')}, Cidade ID: {cidade_info['id']}, Bioma Principal: {cidade_info.get('BiomaP', 'Desconhecido')}, Bioma Secundário: {cidade_info.get('BiomaS', 'Não contêm')}, Bioma Terciário: {cidade_info.get('BiomaT', 'Não contêm')}")
+            else:
+                print(f"{ent.text} → Informação não encontrada")
