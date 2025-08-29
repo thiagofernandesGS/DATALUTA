@@ -36,3 +36,4 @@ def encontrar_locais(texto):
                 print(f"{ent.text} → Região: {regiao_nome}, Estado: {estado_info.get('name', 'Desconhecido')}, Sigla do Estado: {estado_info.get('sigla', 'Desconhecido')}, Cidade ID: {cidade_info['id']}, Bioma Principal: {cidade_info.get('BiomaP', 'Desconhecido')}, Bioma Secundário: {cidade_info.get('BiomaS', 'Não contêm')}, Bioma Terciário: {cidade_info.get('BiomaT', 'Não contêm')}")
             else:
                 print(f"{ent.text} → Informação não encontrada")
+
