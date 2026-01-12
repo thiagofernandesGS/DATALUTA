@@ -1,4 +1,4 @@
-# install beautifulsoup4, spacy, pandas, pt_core_news_lg(sm), openpyxl
+# install bs4, spacy, pandas, pt_core_news_lg(sm), openpyxl
 #python -m spacy download pt_core_news_lg
 
 
@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import pandas as pd
 import identificandoEntidades
+from embedding import criar_vector_store
+from RAG import generate
+import sys
 
 
 # ---------------------------------------------------------------------------Funções----------------------------------------------------------------------------------#
@@ -196,21 +199,29 @@ with open("links.txt", 'r') as file:
         if response.status_code == 200:
             response.encoding = 'utf-8'
 
-            # Aqui por enquanto vamos somente printar as entidades do tipo "LOC" encontradas.
+
             texto = BeautifulSoup(response.text, 'html.parser').get_text(separator=' ', strip=True)
 
-            # 2.4 falta algumas alterações,
+            # 2.4 Procura as entidades nomeadas do texto e utiliza RAG para acuracia.
             locais_encontrados = identificandoEntidades.encontrar_locais(texto)
+            print(locais_encontrados)
+            frases_locais = criar_vector_store(locais_encontrados)
+            encontrar_local = generate(frases_locais, texto)
+            print(encontrar_local)
+            print("-" * 75)
+
+
+
 
             # 2.5 coletando as informaões dos sites
             if dominio_extraido in Lista1:
                 resultado = Ocorrencia1(response, linha)
-                print(resultado)
+                #print(resultado)
                 resultados.append(resultado)
 
             elif dominio_extraido in Lista2:
                 resultado = Ocorrencia2(response, linha)
-                print(resultado)
+                #print(resultado)
                 resultados.append(resultado)
 
             else:
