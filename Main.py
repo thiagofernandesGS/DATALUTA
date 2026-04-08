@@ -1,6 +1,6 @@
 # install bs4, spacy, pandas, pt_core_news_lg(sm), openpyxl
 #python -m spacy download pt_core_news_lg
-
+import os
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +9,7 @@ import pandas as pd
 import identificandoEntidades
 from embedding import criar_vector_store
 from RAG import generate
+import util
 import sys
 
 
@@ -170,7 +171,7 @@ def Ocorrencia2(site, linha):
 Lista1 = ["cimi.org.br", "g1.globo.com", "brasildefato.com.br", "agenciabrasil.ebc.com.br", "metropoles.com",
           "midiamax.uol.com.br", "tvt.org.br", "socioambiental.org", "jornalistaslivres.org", "agenciapara.com.br",
           "gazetadocerrado.com.br",
-          "revistaforum.com.br", "uol.com.br", "oglobo.globo.com", "gov.br", "terra.com.br", "tapajósdefato.com.br",
+          "revistaforum.com.br", "uol.com.br", "oglobo.globo.com", "gov.br", "terra.com.br", "tapajosdefato.com.br",
           "correiobraziliense.com.br",
           "opovo.com.br", "agenciacenarium.com.br", "noticias.uol.com.br", "gov.br/pt-br", "correiodopovo.com.br",
           "funai.gov.br", "acritica.uol.com.br", "ndmais.com.br", "revistacenarium.com.br", "f5.folha.uol.com.br",
@@ -184,7 +185,8 @@ Lista2 = ["seculodiario.com.br", "amazoniareal.com.br", "campograndenews.com.br"
 resultados = []
 
 # 2.2 Lendo os link do arquivo e fazendo request para "enganar" o site
-with open("links.txt", 'r') as file:
+with open("links_novo.txt", 'r') as file:
+    contador = 0
     for linha in file:
         linha = linha.strip()
         response = requests.get(linha,
@@ -199,8 +201,10 @@ with open("links.txt", 'r') as file:
         if response.status_code == 200:
             response.encoding = 'utf-8'
 
-
+            #texto_yan = identificandoEntidades.extrair_texto(response)
             texto = BeautifulSoup(response.text, 'html.parser').get_text(separator=' ', strip=True)
+            #print(f"texto_yan = {len(texto_yan)} texto = {len(texto)}")
+
 
             # 2.4 Procura as entidades nomeadas do texto e utiliza RAG para acuracia.
             locais_encontrados = identificandoEntidades.encontrar_locais(texto)
@@ -208,22 +212,38 @@ with open("links.txt", 'r') as file:
             frases_locais = criar_vector_store(locais_encontrados)
             encontrar_local = generate(frases_locais, texto)
             print(encontrar_local)
-            print("-" * 75)
 
+            informacao_local = identificandoEntidades.extrair_info_llm(encontrar_local)
+            #print(informacao_local)
 
+            informacao_local = identificandoEntidades.extrair_informacao_planilha(informacao_local)
+            #print(len(informacao_local))
+
+            macro = None
+            escala = None
+            bioma = None
+
+            if informacao_local is not None:
+                macro= informacao_local[0]
+                escala = informacao_local[1]
+                bioma = informacao_local[2]
+            else:
+                escala = "NI"
+                macro = "NI"
+                bioma = "NI"
+
+            print("informação local:", informacao_local)
 
 
             # 2.5 coletando as informaões dos sites
             if dominio_extraido in Lista1:
                 resultado = Ocorrencia1(response, linha)
-                #print(resultado)
-                resultados.append(resultado)
+
 
             elif dominio_extraido in Lista2:
                 resultado = Ocorrencia2(response, linha)
+                #print(f"variavel resultado = {resultado}")
                 #print(resultado)
-                resultados.append(resultado)
-
             else:
                 print("")
                 print("------")
@@ -232,10 +252,16 @@ with open("links.txt", 'r') as file:
                 print(dominio_extraido)
                 print("------")
 
-# 2.6 Criado uma planilha com as informações coletadas
-df = pd.DataFrame(resultados, columns=["Título", "Mídia", "Local", "Data"])
+            cod_noticia = util.gerar_codigo(contador)
+            contador += 1
+            resultado_final = [resultado[3], cod_noticia, resultado[0], resultado[1], macro, escala, bioma]
+            #print(f"variavel resultado = {resultado}")
+            print(resultado_final)
+            resultados.append(resultado_final)
+            print("-" * 75)
 
-# Exportando para um arquivo Excel
-df.to_excel("resultados.xlsx", index=False)
+# 2.6 Criado uma planilha com as informações coletadas, ou se a planilha já existe, adiciona mais linhas
+arquivo = "resultados_agrario.xlsx"
+util.adiciona_planilha(arquivo, resultados)
 
-print("Resultados exportados para resultados.xlsx")
+print(f"Resultados exportados para {arquivo}")
